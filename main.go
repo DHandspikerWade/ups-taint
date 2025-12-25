@@ -37,30 +37,30 @@ func getTaint(status string, percentage int64) DesiredTaint {
 		case strings.Contains(status, "OB") && strings.Contains(status, "LB"):
 			return DesiredTaint{
 				Present: true,
-				Value:   "low-battery",
-				Effect:  coreV1.TaintEffectNoExecute,
+				Value: "low-battery",
+				Effect: coreV1.TaintEffectNoExecute,
 			}
 		
 		case threshold > 0 && percentage < threshold:
 			return DesiredTaint{
 				Present: true,
-				Value:   "below-threshold",
-				Effect:  coreV1.TaintEffectNoExecute,
+				Value: "below-threshold",
+				Effect: coreV1.TaintEffectNoExecute,
 			}
 
 		case strings.Contains(status, "OB"):
 			return DesiredTaint{
 				Present: true,
-				Value:   "on-battery",
-				Effect:  coreV1.TaintEffectNoSchedule,
+				Value: "on-battery",
+				Effect: coreV1.TaintEffectNoSchedule,
 			}
 
 		default:
 			// An unknown state is not a healthy node
 			return DesiredTaint{
 				Present: true,
-				Value:   "unknown",
-				Effect:  coreV1.TaintEffectNoSchedule,
+				Value: "unknown",
+				Effect: coreV1.TaintEffectNoSchedule,
 			}
 	}
 }
@@ -78,8 +78,8 @@ func computeTaints(
 			found = true
 			if desired.Present {
 				result = append(result, coreV1.Taint{
-					Key:    TaintKey,
-					Value:  desired.Value,
+					Key: TaintKey,
+					Value: desired.Value,
 					Effect: desired.Effect,
 				})
 			}
@@ -90,8 +90,8 @@ func computeTaints(
 
 	if !found && desired.Present {
 		result = append(result, coreV1.Taint{
-			Key:    TaintKey,
-			Value:  desired.Value,
+			Key: TaintKey,
+			Value: desired.Value,
 			Effect: desired.Effect,
 		})
 	}
@@ -152,7 +152,6 @@ func updateTaints(
 }
 
 func applyNodeTaint(upsName string, newTaint DesiredTaint) {
-	// TODO: unclear why context is needed or it's effect
 	ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
 	defer cancel()
 
@@ -214,19 +213,14 @@ func tick() {
 		panic(err)
 	}
 
-	_, authenticationError := nutClient.Authenticate(os.Getenv("NUT_USERNAME"), os.Getenv("NUT_PASSWORD"))
-	if authenticationError != nil {
-		panic(authenticationError)
+	_, err = nutClient.Authenticate(os.Getenv("NUT_USERNAME"), os.Getenv("NUT_PASSWORD"))
+	if err != nil {
+		panic(err)
 	}
 
-	upsName := os.Getenv("NUT_UPS_NAME")
-	if upsName == "" {
-		panic("NUT_UPS_NAME must be set")
-	}
-
-	upsList, listErr := nutClient.GetUPSList()
-	if listErr != nil {
-		panic(listErr)
+	upsList, err := nutClient.GetUPSList()
+	if err != nil {
+		panic(err)
 	}
 
 	for _, ups := range upsList {
@@ -257,6 +251,7 @@ func main() {
 
 	ticker := time.NewTicker(tickRate * time.Second)
 	defer ticker.Stop()
+
 	fmt.Printf("Starting %d second polling\n", tickRate)
 	for {
 		select {
