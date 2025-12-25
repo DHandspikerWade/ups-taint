@@ -26,9 +26,9 @@ type DesiredTaint struct {
 	Effect  coreV1.TaintEffect
 }
 
-func getTaint(status string, percentage float32) DesiredTaint {
+func getTaint(status string, percentage int64) DesiredTaint {
 	// TODO: read this from ENV
-	var threshold float32 = 20.0
+	var threshold int64 = 50
 
 	switch {
 		case strings.Contains(status, "OL"):
@@ -191,7 +191,14 @@ func applyNodeTaint(upsName string, newTaint DesiredTaint) {
 			continue
 		}
 
-		fmt.Printf("Updating taints on %s\n", node.Name)
+		var reason string
+		if newTaint.Present {
+			reason = newTaint.Value
+		} else {
+			reason = "online"
+		}
+
+		fmt.Printf("Updating taint on %s (reason: %s)\n", node.Name, reason)
 
 		err := updateTaints(ctx, kube, node.Name, updatedTaints)
 		if err != nil {
@@ -200,7 +207,7 @@ func applyNodeTaint(upsName string, newTaint DesiredTaint) {
 	}
 }
 
-func main() {
+func tick() {
 	nutClient, err := nut.Connect(os.Getenv("NUT_ADDRESS"))
 
 	if err != nil {
@@ -226,19 +233,35 @@ func main() {
 		upsVars, _ := ups.GetVariables()
 
 		var status string
-		var battery float32
+		var battery int64
 
 		for _, variable := range upsVars {
 			if variable.Name == "ups.status" {
 				status = variable.Value.(string)
 				break
 			} else if variable.Name == "battery.charge" {
-
+				battery = variable.Value.(int64)
 			}
 		}
 
 		if status != "" && battery > 0 {
 			applyNodeTaint(ups.Name, getTaint(status, battery))
+		}
+	}
+}
+
+func main() {
+	var tickRate time.Duration = 15
+	fmt.Println("Performing inital update")
+	tick()
+
+	ticker := time.NewTicker(tickRate * time.Second)
+	defer ticker.Stop()
+	fmt.Printf("Starting %d second polling\n", tickRate)
+	for {
+		select {
+			case <-ticker.C:
+				tick()
 		}
 	}
 }
