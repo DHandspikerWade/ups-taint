@@ -1,0 +1,10 @@
+steps:
+  build:
+    when:
+      event: 
+        - push
+      path: '*.go'
+    image: golang:1.25-bookworm
+    commands:
+      - chmod +x build.sh
+      - ./build.sh
