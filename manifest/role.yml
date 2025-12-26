@@ -1,0 +1,36 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-labeler
+rules:
+- apiGroups: [""]
+  resources: 
+    - nodes
+  verbs: 
+    - get
+    - list
+    - patch
+    - update
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ups-taint-node-labeler
+  namespace: ups-taint
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: node-labeler
+subjects:
+- kind: ServiceAccount
+  namespace: ups-taint
+  name: ups-taint
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ups-taint
+  namespace: ups-taint

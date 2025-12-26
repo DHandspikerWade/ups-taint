@@ -1,0 +1,63 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ups-taint
+  namespace: ups-taint
+  labels:
+    app.kubernetes.io/name: ups-taint
+spec:
+  selector:
+    matchLabels:
+        app.kubernetes.io/name: ups-taint
+  revisionHistoryLimit: 2
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ups-taint
+    spec:
+      containers:
+        - name: main
+          image: 'ghcr.io/dhandspikerwade/ups-taint:1'
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NUT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nut-server
+                  key: password
+            - name: NUT_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: nut-server
+                  key: address
+            - name: NUT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: nut-server
+                  key: username
+          resources:
+            requests:
+              memory: 20Mi
+              cpu: 5m
+      tolerations:
+        - key: ups.spikedhand.com/status
+          operator: Exists
+          effect: NoExecute
+        - key: ups.spikedhand.com/status
+          operator: Exists
+          effect: NoExecute
+      serviceAccountName: ups-taint
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: ups.spikedhand.com/name
+                    operator: Exists
