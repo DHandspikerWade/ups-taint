@@ -2,4 +2,5 @@
 set -e
 
 go get
-CGO_ENABLED=0 go build  -v -ldflags="-w -s" -o ups-taint
+mkdir -p bin
+CGO_ENABLED=1 go build  -v -ldflags="-w -s" -o bin/ups-taint

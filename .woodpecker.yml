@@ -1,10 +1,20 @@
 steps:
-  build:
-    when:
-      event: 
-        - push
-      path: '*.go'
-    image: golang:1.25-bookworm
-    commands:
-      - chmod +x build.sh
-      - ./build.sh
+- name: Build & publish
+  image: woodpeckerci/plugin-docker-buildx:6
+  settings:
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
+    registry: ghcr.io
+    repo: ghcr.io/dhandspikerwade/ups-taint
+    tags:
+      - latest
+      - 1
+    default_labels: false
+    dry_run: false
+    platforms: linux/amd64
+  when:
+    branch:
+    - main
+    event: [push, manual]
