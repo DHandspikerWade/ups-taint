@@ -31,37 +31,37 @@ func getTaint(status string, percentage int64) DesiredTaint {
 	var threshold int64 = 50
 
 	switch {
-		case strings.Contains(status, "OL"):
-			return DesiredTaint{Present: false}
+	case strings.Contains(status, "OL"):
+		return DesiredTaint{Present: false}
 
-		case strings.Contains(status, "OB") && strings.Contains(status, "LB"):
-			return DesiredTaint{
-				Present: true,
-				Value: "low-battery",
-				Effect: coreV1.TaintEffectNoExecute,
-			}
-		
-		case threshold > 0 && percentage < threshold:
-			return DesiredTaint{
-				Present: true,
-				Value: "below-threshold",
-				Effect: coreV1.TaintEffectNoExecute,
-			}
+	case strings.Contains(status, "OB") && strings.Contains(status, "LB"):
+		return DesiredTaint{
+			Present: true,
+			Value:   "low-battery",
+			Effect:  coreV1.TaintEffectNoExecute,
+		}
 
-		case strings.Contains(status, "OB"):
-			return DesiredTaint{
-				Present: true,
-				Value: "on-battery",
-				Effect: coreV1.TaintEffectNoSchedule,
-			}
+	case threshold > 0 && percentage < threshold:
+		return DesiredTaint{
+			Present: true,
+			Value:   "below-threshold",
+			Effect:  coreV1.TaintEffectNoExecute,
+		}
 
-		default:
-			// An unknown state is not a healthy node
-			return DesiredTaint{
-				Present: true,
-				Value: "unknown",
-				Effect: coreV1.TaintEffectNoSchedule,
-			}
+	case strings.Contains(status, "OB"):
+		return DesiredTaint{
+			Present: true,
+			Value:   "on-battery",
+			Effect:  coreV1.TaintEffectNoSchedule,
+		}
+
+	default:
+		// An unknown state is not a healthy node
+		return DesiredTaint{
+			Present: true,
+			Value:   "unknown",
+			Effect:  coreV1.TaintEffectNoSchedule,
+		}
 	}
 }
 
@@ -78,8 +78,8 @@ func computeTaints(
 			found = true
 			if desired.Present {
 				result = append(result, coreV1.Taint{
-					Key: TaintKey,
-					Value: desired.Value,
+					Key:    TaintKey,
+					Value:  desired.Value,
 					Effect: desired.Effect,
 				})
 			}
@@ -90,8 +90,8 @@ func computeTaints(
 
 	if !found && desired.Present {
 		result = append(result, coreV1.Taint{
-			Key: TaintKey,
-			Value: desired.Value,
+			Key:    TaintKey,
+			Value:  desired.Value,
 			Effect: desired.Effect,
 		})
 	}
@@ -114,7 +114,7 @@ func taintsEqual(a, b []coreV1.Taint) bool {
 	}
 
 	for _, taint := range b {
-		existing, ok := taintList[taint.Key];
+		existing, ok := taintList[taint.Key]
 
 		if !ok || existing.Value != taint.Value || existing.Effect != taint.Effect {
 			return false
@@ -152,7 +152,7 @@ func updateTaints(
 }
 
 func applyNodeTaint(upsName string, newTaint DesiredTaint) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	var cfg *rest.Config
@@ -162,8 +162,8 @@ func applyNodeTaint(upsName string, newTaint DesiredTaint) {
 	if confErr != nil {
 		if confErr == rest.ErrNotInCluster {
 			// fallback to local config for testing
-			cfg, confErr = clientcmd.BuildConfigFromFlags("", os.Getenv("HOME") + "/.kube/config")
-			if (confErr != nil) {
+			cfg, confErr = clientcmd.BuildConfigFromFlags("", os.Getenv("HOME")+"/.kube/config")
+			if confErr != nil {
 				panic(confErr)
 			}
 		} else {
@@ -234,7 +234,11 @@ func tick() {
 				status = variable.Value.(string)
 				break
 			} else if variable.Name == "battery.charge" {
-				battery = variable.Value.(int64)
+				if batteryFloat, ok := variable.Value.(float64); ok {
+					battery = int64(batteryFloat)
+				} else if batteryInt, ok := variable.Value.(int64); ok {
+					battery = batteryInt
+				}
 			}
 		}
 
@@ -255,8 +259,8 @@ func main() {
 	fmt.Printf("Starting %d second polling\n", tickRate)
 	for {
 		select {
-			case <-ticker.C:
-				tick()
+		case <-ticker.C:
+			tick()
 		}
 	}
 }
