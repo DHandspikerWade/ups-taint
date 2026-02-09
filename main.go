@@ -249,7 +249,6 @@ func tick() {
 		}
 
 		if status != "" && battery > 0 {
-			fmt.Printf("Battery is %d\n", battery);
 			applyNodeTaint(ups.Name, getTaint(status, battery))
 		}
 	}
