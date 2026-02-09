@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -234,11 +235,21 @@ func tick() {
 				status = variable.Value.(string)
 				break
 			} else if variable.Name == "battery.charge" {
-				battery = variable.Value.(int64)
+				switch variable.Type {
+					case "FLOAT_64":
+						battery = int64(math.Round(variable.Value.(float64)));
+						break;
+					case "INTEGER":
+						battery = variable.Value.(int64)
+						break;
+					default:
+						fmt.Printf("Recieved invalid battery charge of type \"%s\"\n", variable.Type)
+				}
 			}
 		}
 
 		if status != "" && battery > 0 {
+			fmt.Printf("Battery is %d\n", battery);
 			applyNodeTaint(ups.Name, getTaint(status, battery))
 		}
 	}

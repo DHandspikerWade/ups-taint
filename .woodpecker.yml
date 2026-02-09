@@ -11,10 +11,26 @@ steps:
     tags:
       - latest
       - 1
+      - ${CI_COMMIT_TAG}
     default_labels: false
     dry_run: false
     platforms: linux/amd64
   when:
     branch:
     - main
-    event: [push, manual]
+    event: [ tag ]
+
+- name: Build Image
+  image: woodpeckerci/plugin-docker-buildx:6
+  settings:
+    registry: ghcr.io
+    repo: ghcr.io/dhandspikerwade/ups-taint
+    tags:
+      - latest
+    default_labels: false
+    dry_run: true
+    platforms: linux/amd64
+  when:
+    branch:
+      exclude: [ main ]
+    event: [ push, manual ]
